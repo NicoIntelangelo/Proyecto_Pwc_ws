@@ -18,7 +18,7 @@ try:
     error_404_meli = he.find_all(he.S("//html/body/main/div/div/div[2]/h3")) 
 
     if len(error_404_meli) > 0:
-        print("Error en la busqueda, intentar nuevamente")
+        print("### Error en la busqueda, intentar nuevamente ###")
         he.kill_browser()
 except Exception as e:
     e = e 
