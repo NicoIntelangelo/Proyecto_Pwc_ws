@@ -13,6 +13,17 @@ he.start_chrome(f"https://autos.mercadolibre.com.ar/{brand}/{model}/0-km/2023/")
 
 time.sleep(5)
 
+
+try:
+    error_404_meli = he.find_all(he.S("//html/body/main/div/div/div[2]/h3")) 
+
+    if len(error_404_meli) > 0:
+        print("Error en la busqueda, intentar nuevamente")
+        he.kill_browser()
+except Exception as e:
+    e = e 
+
+
 prices = he.find_all(he.S(".andes-money-amount__fraction"))
 
 total = 0
@@ -150,7 +161,7 @@ else:
 
 ### CREAR ARCHIVO CSV
 
-with open("ejemplo_multiple_celdas.csv", mode='w', newline='', encoding='utf-8') as archivo_csv:
+with open(f"informe_{brand}_{model}.csv", mode='w', newline='', encoding='utf-8') as archivo_csv:
     writer = csv.writer(archivo_csv)
     
     
@@ -165,14 +176,14 @@ with open("ejemplo_multiple_celdas.csv", mode='w', newline='', encoding='utf-8')
             versiones_line.append(version_)
         writer.writerow(versiones_line)
 
-        text_pesos = ["Precio lista $",]
+        text_pesos = "Precio lista $"
         pesos_line = []
         pesos_line.insert(0, text_pesos)
         for pesos_ in prices_value_converted:
             pesos_line.append("$" + str(pesos_))
         writer.writerow(pesos_line)
 
-        text_dolares = ["Precio lista u$d",]
+        text_dolares = "Precio lista u$d"
         dolares_line = []
         dolares_line.insert(0, text_dolares)
         for dolares_ in prices_value_converted_dolars:
@@ -186,6 +197,8 @@ with open("ejemplo_multiple_celdas.csv", mode='w', newline='', encoding='utf-8')
     writer.writerow(["Precio promedio meli $", "$" + str(avg_price_meli)])
     writer.writerow(["Precio promedio meli u$d", "u$d" + str(avg_price_meli_dolar)])
 
+    writer.writerow(["Cotizacion dolar Blue", "$" + str(dolar_blue_value)])
+
     if video_find:
         writer.writerow(["Link test youtube", video_url])
     else:
@@ -198,6 +211,3 @@ print("Archivo CSV creado exitosamente.")
 
 input("presione enter para finalizar")
 he.kill_browser()
-
-
-#hacer que si las listas tienen un len de menos de 1 poner un msj de no encontrado
