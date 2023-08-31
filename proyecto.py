@@ -1,73 +1,109 @@
 import time
 import helium as he
+import csv
+
+
+brand = str(input("seleccione la marca: ")).lower()
+model = str(input("seleccione el modelo: ")).lower()
+
 
 #BUSCAR AUTO EN MERCADO LIBRE Y CALCULAR SU PRECIO PROMEDIO
-marca = str(input("seleccione la marca: "))
-model = str(input("seleccione el modelo: "))
 
-he.start_chrome(f"https://autos.mercadolibre.com.ar/{marca}/{model}/0-km/2023/")
+he.start_chrome(f"https://autos.mercadolibre.com.ar/{brand}/{model}/0-km/2023/")
 
 time.sleep(5)
 
-precios = he.find_all(he.S(".andes-money-amount__fraction"))
+prices = he.find_all(he.S(".andes-money-amount__fraction"))
 
-suma = 0
+total = 0
 
 for i in range(0,30):
-    #print(precios[i].web_element.text)
-    clear_num = int(precios[i].web_element.text.replace(".", ""))
-    #print(clear_num)
-    suma = suma + clear_num
+    clear_num = int(prices[i].web_element.text.replace(".", ""))
+    total = total + clear_num
 
-avg = int(suma/30)
+avg_price_meli = int(total/30)
 
 
 ## COTIZACION DOLAR BLUE VENTA
 he.go_to("https://dolarhoy.com/cotizaciondolarblue")
 
-dolar_blue_venta = he.find_all(he.S("//html/body/div[3]/section/div/div[2]/div[2]/div[1]/div[2]/div[2]/div[2]"))
+dolar_blue = he.find_all(he.S("//html/body/div[3]/section/div/div[2]/div[2]/div[1]/div[2]/div[2]/div[2]"))
 
 
-if len(dolar_blue_venta ) > 0 :
-    for value in dolar_blue_venta :
-        value = value.web_element.text.split(".")[0]
-        value = int(value.split("$")[1])
+if len(dolar_blue ) > 0 :
+    for dolar_blue_value in dolar_blue :
+        dolar_blue_value = dolar_blue_value.web_element.text.split(".")[0]
+        dolar_blue_value = int(dolar_blue_value.split("$")[1])
+
+avg_price_meli_dolar = int(avg_price_meli/dolar_blue_value)
 
 
+print("$",avg_price_meli)
+print("u$d",int(avg_price_meli/dolar_blue_value))
 
-print("$",avg)
-print("u$d",int(avg/value))
+
 
 # BUSCAR EN AUTOCOSMOS
 if len(model) >= 1:
     model_ac = model.replace(" ", "-")
 
-he.go_to(f"https://www.autocosmos.com.ar/catalogo/vigente/{marca}/{model_ac}")
+he.go_to(f"https://www.autocosmos.com.ar/catalogo/vigente/{brand}/{model_ac}")
 
-# #DESCARGAR IMAGEN
-# time.sleep(5)
+time.sleep(3)
 
-# first_image = he.find_all(he.S("body main article section figure picture img"))[0]
+error_404_ac = False
+try:
+    error_404 = he.find_all(he.S(".error-container"))
 
-# first_image_src = first_image.web_element.get_attribute("src")
+    if len(error_404) > 0:
+        error_404_ac = True
+except Exception as e:
+    e = e 
 
-# import requests
-# response = requests.get(first_image_src)
+if error_404_ac == False:
+    #BUSCAR VERSIONES 
 
-# if response.status_code == 200:
-#     with open("nombre_imagen.jpg", "wb") as f:
-#         f.write(response.content)
-#     print("Imagen descargada exitosamente.")
-# else:
-#     print("Error al descargar la imagen.")
+    versions = he.find_all(he.S("body section div div table tbody tr td a"))
 
-#BUSCAR VERSIONES 
-versiones = he.find_all(he.S("body section div div table tbody tr td a"))
+    all_versions = []
 
-#print(versiones)
-for i in range(0,len(versiones),2):
-    print(versiones[i].web_element.text)
-    
+    for i in range(0,len(versions),2):
+        all_versions.append(versions[i].web_element.text)
+        print(versions[i].web_element.text)
+        
+    print(all_versions)
+
+    #BUSCAR PRECIOS
+
+    prices = he.find_all(he.S("body section div div table tbody tr td"))
+
+    prices_value = []
+
+    for i in range(1,len(prices),4):
+        prices_value.append(prices[i].web_element.text)
+        print(prices[i].web_element.text)
+
+    prices_value_converted = []
+
+
+    if len(prices ) > 0 :
+        for price_value in prices_value :
+            price_value = price_value.replace(".","")
+            price_value = int(price_value.split("$")[1])
+            prices_value_converted.append(price_value)
+
+    print(prices_value_converted)
+
+    ## CONVERTIR A DOLARES
+
+    prices_value_converted_dolars = []
+
+    if len(prices ) > 0 :
+        for price_value in prices_value_converted :
+            prices_value_converted_dolars.append(int(price_value/dolar_blue_value))
+
+    print(prices_value_converted_dolars)
+
 
 
 ## BUSCAR TEST EN YOUTUBE
@@ -84,37 +120,84 @@ he.scroll_down(10000)
 time.sleep(2)
 he.scroll_down(10000)
 time.sleep(2)
+he.scroll_down(10000)
+time.sleep(2)
+
 video_titles = he.find_all(he.S("#video-title"))
 
-# if len(model) >= 1:
-#     model_yt = model.replace(" ", "")
+video_find = False
 
-
-not_find = True
+if brand == "volkswagen":
+    brand_1 = "vw"
+else:
+    brand_1 = brand
 
 for titles in video_titles:
-    if marca.lower() and model.lower() in titles.web_element.text.lower():
+    if brand_1.lower() and model.lower() in titles.web_element.text.lower():
         he.click(titles)
-        not_find = False
+        video_find = True
         break
 
-if not_find:
+
+if video_find:
+    video_url = he.get_driver().current_url
+    print(video_url)
+else:
     print("¡Error! No se encontró ninguna coincidencia en YouTube.")
 
 
 
 
-## SKIP ADD YOUTUBE
-time.sleep(8)
+### CREAR ARCHIVO CSV
 
-skip_add = he.find_all(he.S("//html/body/ytd-app/div[1]/ytd-page-manager/ytd-watch-flexy/div[5]/div[1]/div/div[1]/div[2]/div/div/ytd-player/div/div/div[20]/div/div[3]/div/div[2]/span/button"))
+with open("ejemplo_multiple_celdas.csv", mode='w', newline='', encoding='utf-8') as archivo_csv:
+    writer = csv.writer(archivo_csv)
+    
+    
+    writer.writerow(["Marca", brand])
+    writer.writerow(["Modelo", model])
+    
+    if error_404_ac == False:
+        text_version="Versiones"
+        versiones_line = []
+        versiones_line.insert(0, text_version)
+        for version_ in all_versions:
+            versiones_line.append(version_)
+        writer.writerow(versiones_line)
+
+        text_pesos = ["Precio lista $",]
+        pesos_line = []
+        pesos_line.insert(0, text_pesos)
+        for pesos_ in prices_value_converted:
+            pesos_line.append("$" + str(pesos_))
+        writer.writerow(pesos_line)
+
+        text_dolares = ["Precio lista u$d",]
+        dolares_line = []
+        dolares_line.insert(0, text_dolares)
+        for dolares_ in prices_value_converted_dolars:
+            dolares_line.append("u$d" + str(dolares_))
+        writer.writerow(dolares_line)
+    else:
+        writer.writerow(["Versiones", "No Encontrado"])
+        writer.writerow(["Precio lista $", "No Encontrado"])
+        writer.writerow(["Precio lista u$d", "No Encontrado"])
+
+    writer.writerow(["Precio promedio meli $", "$" + str(avg_price_meli)])
+    writer.writerow(["Precio promedio meli u$d", "u$d" + str(avg_price_meli_dolar)])
+
+    if video_find:
+        writer.writerow(["Link test youtube", video_url])
+    else:
+        writer.writerow(["Link test youtube", "No Encontrado"])
 
 
-if len(skip_add) > 0 :
-    for skip_button in skip_add:
-        he.click(skip_button)
+print("Archivo CSV creado exitosamente.")
 
 
 
 input("presione enter para finalizar")
 he.kill_browser()
+
+
+#hacer que si las listas tienen un len de menos de 1 poner un msj de no encontrado
