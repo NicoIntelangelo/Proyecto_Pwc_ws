@@ -28,11 +28,11 @@ prices = he.find_all(he.S(".andes-money-amount__fraction"))
 
 total = 0
 
-for i in range(0,30):
-    clear_num = int(prices[i].web_element.text.replace(".", ""))
+for price in prices:
+    clear_num = int(price.web_element.text.replace(".", ""))
     total = total + clear_num
 
-avg_price_meli = int(total/30)
+avg_price_meli = int(total/len(prices))
 
 
 ## COTIZACION DOLAR BLUE VENTA
